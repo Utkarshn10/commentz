@@ -20,7 +20,7 @@ export default function Home() {
     const handleSelection = () => {
       const selection = window.getSelection();
       const highlightedText = selection.toString();
-      if (highlightedText && highlightedText.length>0) {
+      if (highlightedText) {
         setIsContentHighlighted(true);
         highlightFunction(highlightedText);
       }
