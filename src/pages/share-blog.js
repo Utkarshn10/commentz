@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 function TextSelectionHandler({
   blogContent,
   setCommentClicked,
+  highlightedText,
   setHighlightedText,
 }) {
   const [isContentHighlighted, setIsContentHighlighted] = useState(false);
@@ -31,15 +32,39 @@ function TextSelectionHandler({
     return () => {
       document.removeEventListener("mouseup", handleSelection);
     };
-  }, [isHighlightButtonClicked]); // Add isHighlightButtonClicked as a dependency
+  }, [isHighlightButtonClicked]);
 
   const handleCommentButtonClicked = () => {
-    setIsHighlightButtonClicked(false);
-    setCommentClicked(true);
+    // setIsHighlightButtonClicked(false);
+    // setHighlightedText(highlightedText);
+    // setCommentClicked(true);
+    console.log("here");
   };
 
   const handleHighlightButtonClick = () => {
     setIsHighlightButtonClicked(true);
+  };
+
+  const highlightTextContent = () => {
+    const textContent = blogContent.textcontent;
+    if (highlightedText.length > 0) {
+      const highlightedIndex = textContent.indexOf(highlightedText);
+      if (highlightedIndex !== -1) {
+        return (
+          <>
+            {textContent.substring(0, highlightedIndex)}
+            <span className="bg-green-200">
+              {textContent.substring(
+                highlightedIndex,
+                highlightedIndex + highlightedText.length
+              )}
+            </span>
+            {textContent.substring(highlightedIndex + highlightedText.length)}
+          </>
+        );
+      }
+    }
+    return textContent;
   };
 
   return (
@@ -58,8 +83,8 @@ function TextSelectionHandler({
         </button>
       ) : (
         <button
-          onClick={handleHighlightButtonClick}
-          className="flex justify-center border border-yellow-400 text-yellow-400 rounded-lg py-2 px-3"
+          onClick={() => handleHighlightButtonClick()}
+          className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3`}
         >
           Highlight
         </button>
@@ -68,7 +93,7 @@ function TextSelectionHandler({
       <div className="w-4/5 mx-auto text-black">
         <div className="p-6">
           <p className="text-gray-800" style={{ whiteSpace: "pre-line" }}>
-            {blogContent.textcontent}
+            {highlightTextContent()}
           </p>
         </div>
       </div>
@@ -84,21 +109,22 @@ function NewCommentCard({ setCommentClicked, highlightedText }) {
     // let articleId = localStorage.getItem('article-id');
     // let blogContent =
 
-    if (storedVersion === storedArticle?.version.toString()) {
-      console.log("Article has not been modified since last retrieval.");
+    if (storedVersion === storedBlog?.version.toString()) {
+      console.log("Blog has not been modified since last retrieval.");
     } else {
-      // Article has been updated or the user is fetching it for the first time
+      // Blog has been updated or the user is fetching it for the first time
       console.log(
-        "Article has been modified or user is fetching it for the first time."
+        "Blog has been modified or user is fetching it for the first time."
       );
-      const updatedArticle = {
-        id: articleId,
-        content: newArticleContent,
+      const updatedBlog = {
+        userId: userID,
+        blogId: blogId,
+        content: newBlogContent,
         version: 2,
       };
     }
   };
-
+  console.log(highlightedText);
   return (
     <div className="bg-white w-full text-black">
       <p className="p-2">{highlightedText}</p>
@@ -128,20 +154,21 @@ function NewCommentCard({ setCommentClicked, highlightedText }) {
 export default function Blog() {
   const [commentClicked, setCommentClicked] = useState(false);
   const [highlightedText, setHighlightedText] = useState("");
+  const [blogInfo, setBlogInfo] = useState(null);
+  const [blogContent, setBlogContent] = useState("");
 
-  const blogContent = {
-    heading: "Unleashing Creativity: The Art of Building Side Projects",
-    textcontent: `Embarking on the journey of building side projects is akin to opening the floodgates of creativity. These endeavors serve as a canvas for self-expression, allowing individuals to unleash their imagination and bring ideas to life. Unlike the constraints of daily work tasks, side projects provide the freedom to experiment, take risks, and explore uncharted territories. Whether you are a developer, designer, writer, or artist, these projects act as a playground for innovation, where mistakes are stepping stones and failures are lessons in disguise. Through this creative process, individuals not only hone their technical skills but also cultivate a mindset that embraces curiosity and continuous learning.
-    
-      In the realm of side projects, each venture is a unique chapter in your creative story. It could be a mobile app, a blog, a piece of art, or even a community initiative. The diversity of these projects adds richness to your portfolio, showcasing your versatility and passion. The art of building side projects lies not just in the final product but in the journey itself — the challenges faced, the solutions devised, and the personal growth experienced. It becomes a reflection of your evolving skill set and a testament to your commitment to pushing boundaries.
-      
-      As you embark on the path of building side projects, remember that there are no strict rules. It's about embracing the freedom to experiment, learning from both successes and failures, and enjoying the process of creation. These projects not only make you a better professional but also nurture the artist within, allowing you to leave your unique mark on the vast canvas of the digital landscape.`,
-  };
+  useEffect(() => {
+    let data = JSON.parse(localStorage.getItem("blogInfo"));
+    setBlogContent(data.blogContent);
+    console.log(data);
+  }, []);
+  console.log(commentClicked);
 
   return (
     <div className="h-full md:h-screen w-full bg-[#faf7f5] flex flex-row">
       <div className="flex items-center">
         <TextSelectionHandler
+          highlightedText={highlightedText}
           blogContent={blogContent}
           setCommentClicked={setCommentClicked}
           setHighlightedText={setHighlightedText}

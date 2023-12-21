@@ -38,7 +38,7 @@ export default function Home() {
     let blogVersion = 0
     let blogInfo = {"blogID": blogID, "blogContent": blogContent, "version": blogVersion}
     console.log(blogInfo)
-    localStorage.setItem("blogInfo",blogInfo)
+    localStorage.setItem("blogInfo",JSON.stringify(blogInfo))
   }
 
   return (
