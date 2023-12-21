@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
+import { generateID } from "./../utils/id-generator";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,10 +36,8 @@ function TextSelectionHandler({
   }, [isHighlightButtonClicked]);
 
   const handleCommentButtonClicked = () => {
-    // setIsHighlightButtonClicked(false);
-    // setHighlightedText(highlightedText);
-    // setCommentClicked(true);
-    console.log("here");
+    setIsHighlightButtonClicked(false);
+    setCommentClicked(true);
   };
 
   const handleHighlightButtonClick = () => {
@@ -74,7 +73,7 @@ function TextSelectionHandler({
           {blogContent.heading}
         </h2>
       </div>
-      {isContentHighlighted ? (
+      {highlightedText.length > 0 ? (
         <button
           onClick={() => handleCommentButtonClicked()}
           className="flex justify-center border border-blue-600 text-blue-600 rounded-lg py-2 px-3"
@@ -101,13 +100,16 @@ function TextSelectionHandler({
   );
 }
 
-function NewCommentCard({ setCommentClicked, highlightedText }) {
+function NewCommentCard({ blogInfo, setCommentClicked, highlightedText }) {
   const [comment, setComment] = useState("");
+
   const handleAddComment = () => {
-    // let storedArticle = JSON.parse(localStorage.getItem('article'));
-    // let storedVersion = localStorage.getItem('version');
-    // let articleId = localStorage.getItem('article-id');
-    // let blogContent =
+    let storedBlog = JSON.parse(localStorage.getItem("blogInfo"));
+    let storedVersion = storedBlog.version;
+    let blogID = storedBlog.blogID;
+    let userID = storedBlog.userID;
+    let blogContent = storedBlog.blogContent;
+    let comments = storedBlog?.comments ? storedBlog.comments : [];
 
     if (storedVersion === storedBlog?.version.toString()) {
       console.log("Blog has not been modified since last retrieval.");
@@ -116,12 +118,22 @@ function NewCommentCard({ setCommentClicked, highlightedText }) {
       console.log(
         "Blog has been modified or user is fetching it for the first time."
       );
-      const updatedBlog = {
-        userId: userID,
-        blogId: blogId,
-        content: newBlogContent,
-        version: 2,
+      let commentID = generateID();
+      let commentObj = {
+        commentID: commentID,
+        blogText: highlightedText,
+        commentDesc: comment,
       };
+      comments.push(commentObj);
+      const updatedBlogInfo = {
+        userID: userID,
+        blogID: blogID,
+        comments: comments,
+        content: blogContent,
+        version: storedVersion + 1,
+      };
+      localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
+      alert("Comment Added !");
     }
   };
   console.log(highlightedText);
@@ -160,6 +172,7 @@ export default function Blog() {
   useEffect(() => {
     let data = JSON.parse(localStorage.getItem("blogInfo"));
     setBlogContent(data.blogContent);
+    setBlogInfo(data);
     console.log(data);
   }, []);
   console.log(commentClicked);
@@ -176,6 +189,7 @@ export default function Blog() {
         <div className="flex items-center mx-10">
           {commentClicked && (
             <NewCommentCard
+              blogInfo={blogInfo}
               setCommentClicked={setCommentClicked}
               highlightedText={highlightedText}
             />
