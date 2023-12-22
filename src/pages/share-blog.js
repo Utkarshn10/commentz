@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
 import { generateID } from "./../utils/id-generator";
+import checkForUpdates, { checkForBlogUpdates } from "@/utils/update-checker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -100,26 +101,29 @@ function TextSelectionHandler({
   );
 }
 
-function NewCommentCard({ blogInfo, setCommentClicked, highlightedText }) {
+function NewCommentCard({
+  blogInfo,
+  setCommentClicked,
+  highlightedText,
+  setHighlightedText,
+}) {
   const [comment, setComment] = useState("");
 
   const handleAddComment = () => {
-    let storedBlog = JSON.parse(localStorage.getItem("blogInfo"));
-    let storedVersion = storedBlog.version;
-    let blogID = storedBlog.blogID;
-    let userID = storedBlog.userID;
-    let blogContent = storedBlog.blogContent;
-    let comments = storedBlog?.comments ? storedBlog.comments : [];
+    let data = JSON.parse(localStorage.getItem("blogInfo"));
+    if (!checkForBlogUpdates(data, highlightedText)) {
+      let storedBlog = JSON.parse(localStorage.getItem("blogInfo"));
+      let storedVersion = storedBlog.version;
+      let blogID = storedBlog.blogID;
+      let userID = storedBlog.userID;
+      let blogContent = storedBlog.blogContent;
+      let comments = storedBlog?.comments ? storedBlog.comments : [];
 
-    if (storedVersion === storedBlog?.version.toString()) {
-      console.log("Blog has not been modified since last retrieval.");
-    } else {
-      // Blog has been updated or the user is fetching it for the first time
-      console.log(
-        "Blog has been modified or user is fetching it for the first time."
-      );
       let commentID = generateID();
+      let commentatorID = generateID();
+
       let commentObj = {
+        commentatorID: commentatorID,
         commentID: commentID,
         blogText: highlightedText,
         commentDesc: comment,
@@ -129,14 +133,27 @@ function NewCommentCard({ blogInfo, setCommentClicked, highlightedText }) {
         userID: userID,
         blogID: blogID,
         comments: comments,
-        content: blogContent,
+        blogContent: blogContent,
         version: storedVersion + 1,
       };
       localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
+
+      setHighlightedText("");
+      setCommentClicked(false);
+      setComment("");
       alert("Comment Added !");
     }
+    else{
+     alert('Lines on which comment is being added are updated')
+    }
   };
-  console.log(highlightedText);
+
+  function handleDiscardClicked() {
+    setHighlightedText("");
+    setCommentClicked(false);
+    setComment("");
+  }
+
   return (
     <div className="bg-white w-full text-black">
       <p className="p-2">{highlightedText}</p>
@@ -147,7 +164,7 @@ function NewCommentCard({ blogInfo, setCommentClicked, highlightedText }) {
       />
       <div className="flex justify-end space-x-3 m-1">
         <button
-          onClick={() => setCommentClicked(false)}
+          onClick={() => handleDiscardClicked()}
           className="border border-blue-600 text-blue-600 rounded-lg py-1 px-2"
         >
           Discard
@@ -175,7 +192,6 @@ export default function Blog() {
     setBlogInfo(data);
     console.log(data);
   }, []);
-  console.log(commentClicked);
 
   return (
     <div className="h-full md:h-screen w-full bg-[#faf7f5] flex flex-row">
@@ -190,6 +206,7 @@ export default function Blog() {
           {commentClicked && (
             <NewCommentCard
               blogInfo={blogInfo}
+              setHighlightedText={setHighlightedText}
               setCommentClicked={setCommentClicked}
               highlightedText={highlightedText}
             />

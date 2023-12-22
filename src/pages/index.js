@@ -1,5 +1,6 @@
 import { useState, useEffect, version } from "react";
 import { generateID } from "./../utils/id-generator";
+import checkForCommentUpdates from "@/utils/update-checker";
 
 function CommentCard({ commentData }) {
   return (
@@ -15,6 +16,9 @@ function CommentCard({ commentData }) {
 export default function Home() {
   const [updatedContent, setUpdatedContent] = useState("");
   const [commentsInfo, setCommentsInfo] = useState([]);
+  const [editEnabled, setEditEnabled] = useState(false);
+  const [blogInfo, setBlogInfo] = useState(null);
+
   const blogContent = {
     heading: "Unleashing Creativity: The Art of Building Side Projects",
     textcontent: `Embarking on the journey of building side projects is akin to opening the floodgates of creativity. These endeavors serve as a canvas for self-expression, allowing individuals to unleash their imagination and bring ideas to life. Unlike the constraints of daily work tasks, side projects provide the freedom to experiment, take risks, and explore uncharted territories. Whether you are a developer, designer, writer, or artist, these projects act as a playground for innovation, where mistakes are stepping stones and failures are lessons in disguise. Through this creative process, individuals not only hone their technical skills but also cultivate a mindset that embraces curiosity and continuous learning.
@@ -26,7 +30,7 @@ export default function Home() {
 
   useEffect(() => {
     let data = JSON.parse(localStorage.getItem("blogInfo"));
-    console.log(data);
+    setBlogInfo(data);
     if (data?.comments) setCommentsInfo(data.comments);
   }, []);
 
@@ -37,21 +41,49 @@ export default function Home() {
 
   const handleDiscardChanges = () => {
     setUpdatedContent("");
+    setEditEnabled(false);
   };
 
   const handleSaveChanges = () => {
-    let userID = generateID();
-    let blogID = generateID();
-    let blogVersion = 0;
-    let blogInfo = {
-      userID: userID,
-      blogID: blogID,
-      blogContent: blogContent,
-      version: blogVersion,
-    };
-    console.log(blogInfo);
-    localStorage.setItem("blogInfo", JSON.stringify(blogInfo));
-    alert("Blog Updated");
+    if (updatedContent.length > 0) {
+      let data = JSON.parse(localStorage.getItem("blogInfo"));
+
+      let updatedComments = checkForCommentUpdates(
+        data,
+        updatedContent,
+        blogInfo
+      );
+      console.log(data.version);
+
+      setEditEnabled(false);
+
+      let userID = generateID();
+      let blogID = generateID();
+
+      let blogVersion = data.hasOwnProperty("version") ? parseInt(data.version) + 1 : 0;
+      let updatedBlogInfo = {
+        userID: userID,
+        blogID: blogID,
+        comments: updatedComments.length > 0 ? updatedComments : commentsInfo,
+        blogContent: blogContent,
+        version: blogVersion,
+      };
+      console.log(updatedBlogInfo);
+      // localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
+      alert("Blog Updated");
+    }
+  };
+
+  const getHighlightedText = () => {
+    let highlightedText = blogContent.textcontent;
+    commentsInfo.forEach((commentData) => {
+      const blogText = commentData.blogText;
+      console.log(blogText);
+      const highlightedPart = `<span class="bg-yellow-100">${blogText}</span>`;
+      highlightedText = highlightedText.split(blogText).join(highlightedPart);
+    });
+
+    return { __html: highlightedText };
   };
 
   return (
@@ -64,18 +96,27 @@ export default function Home() {
         </div>
 
         <div className="w-full h-full md:w-2/3 mx-auto text-black">
-          <textarea
-            onChange={(e) => updateContent(e)}
-            value={
-              updatedContent.length > 0
-                ? updatedContent
-                : blogContent.textcontent
-            }
-            className="text-gray-800 w-full h-3/4 border rounded p-2"
-            style={{ whiteSpace: "pre-line", height: "60vh" }}
-          />
+          {editEnabled ? (
+            <textarea
+              onChange={(e) => updateContent(e)}
+              value={
+                updatedContent.length > 0
+                  ? updatedContent
+                  : blogContent.textcontent
+              }
+              className="text-gray-800 w-full h-3/4 border rounded p-2"
+              style={{ whiteSpace: "pre-line", height: "60vh" }}
+            />
+          ) : (
+            <div
+              className="text-gray-800 w-full h-3/4  rounded p-2"
+              style={{ whiteSpace: "pre-line", height: "60vh" }}
+              dangerouslySetInnerHTML={getHighlightedText()}
+            />
+          )}
         </div>
-        {updatedContent.length > 0 ? (
+
+        {editEnabled ? (
           <div className="flex space-x-3 my-4">
             <button
               onClick={() => handleDiscardChanges()}
@@ -90,10 +131,17 @@ export default function Home() {
               Save
             </button>
           </div>
-        ) : null}
+        ) : (
+          <button
+            onClick={() => setEditEnabled(true)}
+            className="border bg-blue-600 text-white rounded-lg py-2 px-4"
+          >
+            Edit
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center mx-10">
+      <div className="flex flex-col space-y-3 items-center mx-10">
         {commentsInfo.length > 0 &&
           commentsInfo.map((commentData, index) => {
             return <CommentCard index={index} commentData={commentData} />;
