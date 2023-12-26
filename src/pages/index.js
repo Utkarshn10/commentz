@@ -18,6 +18,8 @@ export default function Home() {
   const [commentsInfo, setCommentsInfo] = useState([]);
   const [editEnabled, setEditEnabled] = useState(false);
   const [blogInfo, setBlogInfo] = useState(null);
+  let userID = "user1234";
+  let blogID = "blog_1";
 
   const blogContent = {
     heading: "Unleashing Creativity: The Art of Building Side Projects",
@@ -30,8 +32,11 @@ export default function Home() {
 
   useEffect(() => {
     let data = JSON.parse(localStorage.getItem("blogInfo"));
-    setBlogInfo(data);
-    if (data?.comments) setCommentsInfo(data.comments);
+    if (data && data[userID] && data[userID][blogID]) {
+      let blogData = data[userID][blogID];
+      setBlogInfo(blogData);
+      if (blogData?.comments) setCommentsInfo(blogData.comments);
+    }
   }, []);
 
   const updateContent = (e) => {
@@ -46,30 +51,37 @@ export default function Home() {
 
   const handleSaveChanges = () => {
     if (updatedContent.length > 0) {
+      let updatedComments = [];
+      // pulling the latest data from storage to check the updates
       let data = JSON.parse(localStorage.getItem("blogInfo"));
-
-      let updatedComments = checkForCommentUpdates(
-        data,
-        updatedContent,
-        blogInfo
-      );
-      console.log(data.version);
+      let blogData = {};
+      if (data && data[userID] && data[userID][blogID]) {
+        blogData = data[userID][blogID];
+        updatedComments = checkForCommentUpdates(
+          blogData,
+          updatedContent,
+          blogInfo
+        );
+      }
 
       setEditEnabled(false);
 
-      let userID = generateID();
-      let blogID = generateID();
+      let blogVersion = blogData.hasOwnProperty("version")
+        ? parseInt(blogData.version) + 1
+        : 0;
 
-      let blogVersion = data.hasOwnProperty("version") ? parseInt(data.version) + 1 : 0;
       let updatedBlogInfo = {
-        userID: userID,
-        blogID: blogID,
-        comments: updatedComments.length > 0 ? updatedComments : commentsInfo,
-        blogContent: blogContent,
-        version: blogVersion,
+        [userID]: {
+          [blogID]: {
+            comments:
+              updatedComments.length > 0 ? updatedComments : commentsInfo,
+            blogContent: blogContent,
+            version: blogVersion,
+          },
+        },
       };
       console.log(updatedBlogInfo);
-      // localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
+      localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
       alert("Blog Updated");
     }
   };

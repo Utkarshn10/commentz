@@ -25,8 +25,9 @@ export default function checkForCommentUpdates(data,updatedContent, blogInfo) {
 export function checkForBlogUpdates(data,highlightedText) {
   // check that whether any comment that is added, its data exist here or not
   // if not then remove the comment
+  console.log(data)
   let updatedContent = data.blogContent.textcontent
 
   let blogUpdated = updatedContent.includes(highlightedText)
-    return blogUpdated
+  return blogUpdated
 }

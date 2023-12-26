@@ -103,6 +103,8 @@ function TextSelectionHandler({
 
 function NewCommentCard({
   blogInfo,
+  userID,
+  blogID,
   setCommentClicked,
   highlightedText,
   setHighlightedText,
@@ -110,41 +112,43 @@ function NewCommentCard({
   const [comment, setComment] = useState("");
 
   const handleAddComment = () => {
-    let data = JSON.parse(localStorage.getItem("blogInfo"));
-    if (!checkForBlogUpdates(data, highlightedText)) {
-      let storedBlog = JSON.parse(localStorage.getItem("blogInfo"));
-      let storedVersion = storedBlog.version;
-      let blogID = storedBlog.blogID;
-      let userID = storedBlog.userID;
-      let blogContent = storedBlog.blogContent;
-      let comments = storedBlog?.comments ? storedBlog.comments : [];
+    let storedBlog = JSON.parse(localStorage.getItem("blogInfo"));
+    let blogData = {};
+    if (storedBlog && storedBlog[userID] && storedBlog[userID][blogID]) {
+      blogData = storedBlog[userID][blogID];
+      if (checkForBlogUpdates(blogData, highlightedText)) {
+        let storedVersion = storedBlog.version;
+        let blogContent = storedBlog.blogContent;
+        let comments = storedBlog?.comments ? storedBlog.comments : [];
 
-      let commentID = generateID();
-      let commentatorID = generateID();
+        let commentID = generateID();
+        let commentatorID = generateID();
 
-      let commentObj = {
-        commentatorID: commentatorID,
-        commentID: commentID,
-        blogText: highlightedText,
-        commentDesc: comment,
-      };
-      comments.push(commentObj);
-      const updatedBlogInfo = {
-        userID: userID,
-        blogID: blogID,
-        comments: comments,
-        blogContent: blogContent,
-        version: storedVersion + 1,
-      };
-      localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
+        let commentObj = {
+          commentatorID: commentatorID,
+          commentID: commentID,
+          blogText: highlightedText,
+          commentDesc: comment,
+        };
+        comments.push(commentObj);
+        const updatedBlogInfo = {
+          [userID]: {
+            [blogID]: {
+              comments: comments,
+              blogContent: blogContent,
+              version: storedVersion + 1,
+            },
+          },
+        };
+        localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
 
-      setHighlightedText("");
-      setCommentClicked(false);
-      setComment("");
-      alert("Comment Added !");
-    }
-    else{
-     alert('Lines on which comment is being added are updated')
+        setHighlightedText("");
+        setCommentClicked(false);
+        setComment("");
+        alert("Comment Added !");
+      } else {
+        alert("Lines on which comment is being added are updated");
+      }
     }
   };
 
@@ -185,34 +189,47 @@ export default function Blog() {
   const [highlightedText, setHighlightedText] = useState("");
   const [blogInfo, setBlogInfo] = useState(null);
   const [blogContent, setBlogContent] = useState("");
+  let userID = "user1234";
+  let blogID = "blog_1";
 
   useEffect(() => {
     let data = JSON.parse(localStorage.getItem("blogInfo"));
-    setBlogContent(data.blogContent);
-    setBlogInfo(data);
+    if (data && data[userID] && data[userID][blogID]) {
+      let blogData = data[userID][blogID];
+      setBlogInfo(blogData);
+      setBlogContent(blogData.blogContent);
+    }
     console.log(data);
   }, []);
 
   return (
     <div className="h-full md:h-screen w-full bg-[#faf7f5] flex flex-row">
-      <div className="flex items-center">
-        <TextSelectionHandler
-          highlightedText={highlightedText}
-          blogContent={blogContent}
-          setCommentClicked={setCommentClicked}
-          setHighlightedText={setHighlightedText}
-        />
-        <div className="flex items-center mx-10">
-          {commentClicked && (
-            <NewCommentCard
-              blogInfo={blogInfo}
-              setHighlightedText={setHighlightedText}
-              setCommentClicked={setCommentClicked}
-              highlightedText={highlightedText}
-            />
-          )}
+      {blogContent.length === 0 ? (
+        <div className="text-black flex items-center justify-center">
+          Blog Draft no longer exists
         </div>
-      </div>
+      ) : (
+        <div className="flex items-center">
+          <TextSelectionHandler
+            highlightedText={highlightedText}
+            blogContent={blogContent}
+            setCommentClicked={setCommentClicked}
+            setHighlightedText={setHighlightedText}
+          />
+          <div className="flex items-center mx-10">
+            {commentClicked && (
+              <NewCommentCard
+                blogInfo={blogInfo}
+                userID={userID}
+                blogID={blogID}
+                setHighlightedText={setHighlightedText}
+                setCommentClicked={setCommentClicked}
+                highlightedText={highlightedText}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
