@@ -40,7 +40,6 @@ export default function Home() {
   }, []);
 
   const updateContent = (e) => {
-    console.log(e.target.value);
     setUpdatedContent(e.target.value);
   };
 
@@ -69,28 +68,32 @@ export default function Home() {
       let blogVersion = blogData.hasOwnProperty("version")
         ? parseInt(blogData.version) + 1
         : 0;
+      4;
+      let content = {
+        heading: blogContent.heading,
+        textcontent: updatedContent,
+      };
 
       let updatedBlogInfo = {
         [userID]: {
           [blogID]: {
             comments:
               updatedComments.length > 0 ? updatedComments : commentsInfo,
-            blogContent: blogContent,
+            blogContent: content,
             version: blogVersion,
           },
         },
       };
-      console.log(updatedBlogInfo);
       localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
       alert("Blog Updated");
     }
   };
 
   const getHighlightedText = () => {
-    let highlightedText = blogContent.textcontent;
+    let highlightedText =
+      updatedContent.length > 0 ? updatedContent : blogContent.textcontent;
     commentsInfo.forEach((commentData) => {
       const blogText = commentData.blogText;
-      console.log(blogText);
       const highlightedPart = `<span class="bg-yellow-100">${blogText}</span>`;
       highlightedText = highlightedText.split(blogText).join(highlightedPart);
     });

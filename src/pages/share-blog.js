@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
 import { generateID } from "./../utils/id-generator";
 import checkForUpdates, { checkForBlogUpdates } from "@/utils/update-checker";
+import { CommentCard } from "@/components/commentCard";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -102,7 +103,7 @@ function TextSelectionHandler({
 }
 
 function NewCommentCard({
-  blogInfo,
+  commentsInfo,
   userID,
   blogID,
   setCommentClicked,
@@ -112,11 +113,10 @@ function NewCommentCard({
   const [comment, setComment] = useState("");
 
   const handleAddComment = () => {
-    let storedBlog = JSON.parse(localStorage.getItem("blogInfo"));
-    let blogData = {};
-    if (storedBlog && storedBlog[userID] && storedBlog[userID][blogID]) {
-      blogData = storedBlog[userID][blogID];
-      if (checkForBlogUpdates(blogData, highlightedText)) {
+    let data = JSON.parse(localStorage.getItem("blogInfo"));
+    if (data && data[userID] && data[userID][blogID]) {
+      let storedBlog = data[userID][blogID];
+      if (checkForBlogUpdates(storedBlog, highlightedText)) {
         let storedVersion = storedBlog.version;
         let blogContent = storedBlog.blogContent;
         let comments = storedBlog?.comments ? storedBlog.comments : [];
@@ -131,6 +131,7 @@ function NewCommentCard({
           commentDesc: comment,
         };
         comments.push(commentObj);
+        commentsInfo.push(commentObj);
         const updatedBlogInfo = {
           [userID]: {
             [blogID]: {
@@ -147,7 +148,9 @@ function NewCommentCard({
         setComment("");
         alert("Comment Added !");
       } else {
-        alert("Lines on which comment is being added are updated");
+        alert(
+          "Lines on which comment is being added are updated. Comment can't be added. Refresh Page to View."
+        );
       }
     }
   };
@@ -189,6 +192,7 @@ export default function Blog() {
   const [highlightedText, setHighlightedText] = useState("");
   const [blogInfo, setBlogInfo] = useState(null);
   const [blogContent, setBlogContent] = useState("");
+  const [commentsInfo, setCommentsInfo] = useState([]);
   let userID = "user1234";
   let blogID = "blog_1";
 
@@ -198,38 +202,46 @@ export default function Blog() {
       let blogData = data[userID][blogID];
       setBlogInfo(blogData);
       setBlogContent(blogData.blogContent);
+      if (blogData?.comments) setCommentsInfo(blogData.comments);
     }
-    console.log(data);
   }, []);
 
   return (
-    <div className="h-full md:h-screen w-full bg-[#faf7f5] flex flex-row">
-      {blogContent.length === 0 ? (
-        <div className="text-black flex items-center justify-center">
-          Blog Draft no longer exists
-        </div>
-      ) : (
-        <div className="flex items-center">
-          <TextSelectionHandler
-            highlightedText={highlightedText}
-            blogContent={blogContent}
-            setCommentClicked={setCommentClicked}
-            setHighlightedText={setHighlightedText}
-          />
-          <div className="flex items-center mx-10">
-            {commentClicked && (
-              <NewCommentCard
-                blogInfo={blogInfo}
-                userID={userID}
-                blogID={blogID}
-                setHighlightedText={setHighlightedText}
-                setCommentClicked={setCommentClicked}
-                highlightedText={highlightedText}
-              />
-            )}
+    <div className="h-full  md:min-h-screen w-full bg-[#faf7f5] flex flex-row">
+      <div className="flex items-center flex-col flex-grow">
+        {!blogContent && blogContent.length === 0 ? (
+          <div className="text-black flex items-center  w-full justify-center">
+            Blog Draft no longer exists
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center">
+            <TextSelectionHandler
+              highlightedText={highlightedText}
+              blogContent={blogContent}
+              setCommentClicked={setCommentClicked}
+              setHighlightedText={setHighlightedText}
+            />
+            <div className="flex items-center mx-10">
+              {commentClicked && (
+                <NewCommentCard
+                  commentsInfo={commentsInfo}
+                  userID={userID}
+                  blogID={blogID}
+                  setHighlightedText={setHighlightedText}
+                  setCommentClicked={setCommentClicked}
+                  highlightedText={highlightedText}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col space-y-3 items-center mx-10">
+        {commentsInfo.length > 0 &&
+          commentsInfo.map((commentData, index) => {
+            return <CommentCard index={index} commentData={commentData} />;
+          })}
+      </div>
     </div>
   );
 }
