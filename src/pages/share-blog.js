@@ -236,10 +236,16 @@ export default function Blog() {
           </div>
         )}
       </div>
-      <div className="flex flex-col space-y-3 items-center mx-10">
+      <div className="flex flex-col my-5 space-y-3 items-center mx-10">
         {commentsInfo.length > 0 &&
           commentsInfo.map((commentData, index) => {
-            return <CommentCard key={index} commentData={commentData} />;
+            return (
+              <CommentCard
+                key={index}
+                commentsInfo={commentsInfo}
+                commentData={commentData}
+              />
+            );
           })}
       </div>
     </div>
