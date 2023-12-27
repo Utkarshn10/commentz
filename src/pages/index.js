@@ -36,7 +36,7 @@ export default function Home() {
       setDataExists(true);
       let blogData = data[userID][blogID];
       setBlogInfo(blogData);
-      setBlogContent(blogData.blogContent)
+      setBlogContent(blogData.blogContent);
       if (blogData?.comments) setCommentsInfo(blogData.comments);
     }
   }, []);
@@ -92,6 +92,20 @@ export default function Home() {
     }
   };
 
+  const handleCopyLink = () => {
+    const linkToCopy = "http://localhost:3000/share-blog";
+
+    navigator.clipboard
+      .writeText(linkToCopy)
+      .then(() => {
+        alert("Link copied to clipboard");
+      })
+      .catch((err) => {
+        alert("Unable to copy link to clipboard");
+        console.log(err);
+      });
+  };
+
   const getHighlightedText = () => {
     let highlightedText =
       updatedContent.length > 0 ? updatedContent : blogContent.textcontent;
@@ -142,6 +156,12 @@ export default function Home() {
             Edit
           </button>
         )}
+        <button
+          onClick={() => handleCopyLink()}
+          className="border bg-blue-600 text-white rounded-lg py-2 px-4"
+        >
+          Share
+        </button>
 
         <div className="w-full h-full md:w-2/3 mx-auto text-black">
           {editEnabled ? (
