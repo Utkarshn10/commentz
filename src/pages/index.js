@@ -18,6 +18,7 @@ export default function Home() {
   const [commentsInfo, setCommentsInfo] = useState([]);
   const [editEnabled, setEditEnabled] = useState(false);
   const [blogInfo, setBlogInfo] = useState(null);
+  const [dataExists, setDataExists] = useState(false);
   const [blogContent, setBlogContent] = useState({
     heading: "Unleashing Creativity: The Art of Building Side Projects",
     textcontent: `Embarking on the journey of building side projects is akin to opening the floodgates of creativity. These endeavors serve as a canvas for self-expression, allowing individuals to unleash their imagination and bring ideas to life. Unlike the constraints of daily work tasks, side projects provide the freedom to experiment, take risks, and explore uncharted territories. Whether you are a developer, designer, writer, or artist, these projects act as a playground for innovation, where mistakes are stepping stones and failures are lessons in disguise. Through this creative process, individuals not only hone their technical skills but also cultivate a mindset that embraces curiosity and continuous learning.
@@ -32,6 +33,7 @@ export default function Home() {
   useEffect(() => {
     let data = JSON.parse(localStorage.getItem("blogInfo"));
     if (data && data[userID] && data[userID][blogID]) {
+      setDataExists(true);
       let blogData = data[userID][blogID];
       setBlogInfo(blogData);
       setBlogContent(blogData.blogContent);
@@ -49,6 +51,27 @@ export default function Home() {
   };
 
   const handleSaveChanges = () => {
+    if (!dataExists) {
+      setDataExists(true);
+
+      let content = {
+        heading: blogContent.heading,
+        textcontent: blogContent.textcontent,
+      };
+
+      let updatedBlogInfo = {
+        [userID]: {
+          [blogID]: {
+            comments: commentsInfo,
+            blogContent: content,
+            version: 0,
+          },
+        },
+      };
+      localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
+      alert("Blog Added");
+    }
+
     if (updatedContent.length > 0) {
       let updatedComments = [];
       // pulling the latest data from storage to check the updates
@@ -91,7 +114,7 @@ export default function Home() {
   };
 
   const handleCopyLink = () => {
-    const linkToCopy = "http://localhost:3000/share-blog";
+    const linkToCopy = "https://commentz.vercel.app/share-blog";
 
     navigator.clipboard
       .writeText(linkToCopy)
@@ -124,7 +147,14 @@ export default function Home() {
             {blogContent.heading}
           </h2>
         </div>
-        {editEnabled ? (
+        {!dataExists ? (
+          <button
+            onClick={() => handleSaveChanges()}
+            className="border bg-blue-600 text-white rounded-lg py-2 px-4"
+          >
+            Save to DB
+          </button>
+        ) : editEnabled ? (
           <div className="flex space-x-3 my-4">
             <button
               onClick={() => handleDiscardChanges()}
@@ -153,6 +183,7 @@ export default function Home() {
         >
           Share
         </button>
+
         <div className="w-full h-full md:w-2/3 mx-auto text-black">
           {editEnabled ? (
             <textarea
