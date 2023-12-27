@@ -84,8 +84,8 @@ export default function Home() {
           updatedContent,
           blogInfo
         );
+        setCommentsInfo(updatedComments);
       }
-
       setEditEnabled(false);
 
       let blogVersion = blogData.hasOwnProperty("version")
@@ -101,13 +101,15 @@ export default function Home() {
         [userID]: {
           [blogID]: {
             comments:
-              updatedComments.length > 0 ? updatedComments : commentsInfo,
+              data && data[userID] && data[userID][blogID]
+                ? updatedComments
+                : commentsInfo,
             blogContent: content,
             version: blogVersion,
           },
         },
       };
-      if (updatedComments.length > 0) setCommentsInfo(updatedComments);
+      // if (updatedComments.length > 0) setCommentsInfo(updatedComments);
       localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
       alert("Blog Updated");
     }
