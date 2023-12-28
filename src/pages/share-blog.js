@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
-import { generateID } from "./../utils/id-generator";
+import { generateID, generateLineIdentifier } from "./../utils/id-generator";
 import checkForUpdates, { checkForBlogUpdates } from "@/utils/update-checker";
 import { CommentCard } from "@/components/commentCard";
 
@@ -120,18 +120,23 @@ function NewCommentCard({
         let storedVersion = storedBlog.version;
         let blogContent = storedBlog.blogContent;
         let comments = storedBlog?.comments ? storedBlog.comments : [];
-
+  
         let commentID = generateID();
         let commentatorID = generateID();
-
+  
+        // Use a unique identifier for the line instead of character indices
+        const lineIdentifier = generateLineIdentifier(highlightedText); // Implement this function to generate a unique line identifier
+  
         let commentObj = {
           commentatorID: commentatorID,
           commentID: commentID,
           blogText: highlightedText,
           commentDesc: comment,
+          lineIdentifier: lineIdentifier,
         };
+        console.log(commentObj)
         comments.push(commentObj);
-        commentsInfo.push(commentObj);
+  
         const updatedBlogInfo = {
           [userID]: {
             [blogID]: {
@@ -142,14 +147,14 @@ function NewCommentCard({
           },
         };
         localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
-
+  
         setHighlightedText("");
         setCommentClicked(false);
         setComment("");
         alert("Comment Added !");
       } else {
         alert(
-          "Lines on which comment is being added are updated. Comment can't be added. Refresh Page to View."
+          "Lines on which the comment is being added are updated. Comment can't be added. Refresh Page to View."
         );
       }
     }

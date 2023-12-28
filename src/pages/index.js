@@ -74,7 +74,7 @@ export default function Home() {
 
     if (updatedContent.length > 0) {
       let updatedComments = [];
-      // pulling the latest data from storage to check the updates
+      // Pulling the latest data from storage to check for updates
       let data = JSON.parse(localStorage.getItem("blogInfo"));
       let blogData = {};
       if (data && data[userID] && data[userID][blogID]) {
@@ -84,6 +84,12 @@ export default function Home() {
           updatedContent,
           blogInfo
         );
+
+        // Filter out comments associated with deleted lines
+        updatedComments = updatedComments.filter(
+          (comment) => comment.lineIdentifier !== -1
+        );
+
         setCommentsInfo(updatedComments);
       }
       setEditEnabled(false);
@@ -91,7 +97,7 @@ export default function Home() {
       let blogVersion = blogData.hasOwnProperty("version")
         ? parseInt(blogData.version) + 1
         : 0;
-      4;
+
       let content = {
         heading: blogContent.heading,
         textcontent: updatedContent,
@@ -109,10 +115,29 @@ export default function Home() {
           },
         },
       };
-      // if (updatedComments.length > 0) setCommentsInfo(updatedComments);
       localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
       alert("Blog Updated");
     }
+  };
+
+  const checkForCommentUpdates = (blogData, updatedContent, blogInfo) => {
+    let updatedComments = [];
+
+    // Assuming commentsInfo is an array of comments associated with the previous content
+    const commentsInfo = blogData.comments || [];
+
+    commentsInfo.forEach((comment) => {
+      const { lineIdentifier } = comment;
+
+      // Check if the line identifier is still present in the updated content
+      if (updatedContent.includes(lineIdentifier)) {
+        // If the line identifier is present, keep the comment as it is
+        updatedComments.push(comment);
+      }
+      // Otherwise, the line was deleted, and we exclude the comment from the updated set
+    });
+
+    return updatedComments;
   };
 
   const handleCopyLink = () => {
@@ -132,14 +157,26 @@ export default function Home() {
   const getHighlightedText = () => {
     let highlightedText =
       updatedContent.length > 0 ? updatedContent : blogContent.textcontent;
+  
     commentsInfo.forEach((commentData) => {
       const blogText = commentData.blogText;
-      const highlightedPart = `<span class="bg-yellow-100">${blogText}</span>`;
-      highlightedText = highlightedText?.split(blogText).join(highlightedPart);
+      const lineIdentifier = commentData.lineIdentifier;
+  
+      // Use a regular expression with global flag to find all occurrences
+      const regex = new RegExp(blogText, 'g');
+  
+      // Replace all occurrences with the highlighted span
+      highlightedText = highlightedText.replace(
+        regex,
+        `<span class="bg-yellow-100" data-line-identifier="${lineIdentifier}">${blogText}</span>`
+      );
     });
-
+  
     return { __html: highlightedText };
   };
+  
+  
+  
 
   return (
     <div className="h-full md:min-h-screen w-full bg-[#faf7f5] flex flex-row">
