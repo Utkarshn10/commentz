@@ -137,12 +137,12 @@ export default function Home() {
 
       // Check if the line number is still valid in the updated content
       const lines = updatedContent.split(".");
-      if (lineNumber < lines.length && lineNumber!=-1) {
+      if (lineNumber < lines.length && lineNumber != -1) {
         // Check if the character offset is within the line
         const line = lines[lineNumber];
-        console.log(lineNumber," ",lines)
+        console.log(lineNumber, " ", lines);
         const updatedLineContentHash = md5(line);
-        console.log(line," ",lineContentHash," ",updatedLineContentHash)
+        console.log(line, " ", lineContentHash, " ", updatedLineContentHash);
 
         if (lineContentHash === updatedLineContentHash) {
           // If the line content hash matches, check if the position is still valid
@@ -174,11 +174,13 @@ export default function Home() {
 
   const getLineAndOffset = (fullText, highlightedText) => {
     // Use a placeholder character not present in the text
-    const placeholder = '|';
-    const lines = fullText.split('.').map(line => line.replace(/\./g, placeholder));
+    const placeholder = "|";
+    const lines = fullText
+      .split(".")
+      .map((line) => line.replace(/\./g, placeholder));
     let lineNumber = -1;
     let characterOffset = -1;
-  
+
     for (let i = 0; i < lines.length; i++) {
       const index = lines[i].indexOf(highlightedText);
       console.log(index);
@@ -188,12 +190,15 @@ export default function Home() {
         break;
       }
     }
-  
+
     if (lineNumber !== -1) {
       // Calculate the hash of the line content
-      const lineContent = lines[lineNumber].replace(new RegExp(placeholder, 'g'), '.');
+      const lineContent = lines[lineNumber].replace(
+        new RegExp(placeholder, "g"),
+        "."
+      );
       const lineContentHash = md5(lineContent);
-  
+
       return { lineNumber, characterOffset, lineContentHash };
     } else {
       // Handle the case when highlightedText is not found
@@ -201,8 +206,6 @@ export default function Home() {
       return { lineNumber, characterOffset, lineContentHash: null };
     }
   };
-  
-  
 
   const handleCopyLink = () => {
     const linkToCopy = "https://commentz.vercel.app/share-blog";
@@ -252,77 +255,79 @@ export default function Home() {
   };
 
   return (
-    <div className="h-full md:min-h-screen w-full bg-[#faf7f5] flex flex-row">
-      <div className="flex items-center flex-col flex-grow">
-        <div className="flex flex-row">
-          <h2 className="text-2xl md:text-4xl font-semibold my-8 text-black text-center md:mx-auto">
-            {blogContent.title}
-          </h2>
-        </div>
-        {!dataExists ? (
-          <button
-            onClick={() => handleSaveChanges()}
-            className="border bg-blue-600 text-white rounded-lg py-2 px-4"
-          >
-            Save to DB
-          </button>
-        ) : editEnabled ? (
-          <div className="flex space-x-3 my-4">
-            <button
-              onClick={() => handleDiscardChanges()}
-              className="border border-blue-600 text-blue-600 rounded-lg py-2 px-4"
-            >
-              Discard
-            </button>
+    <div className="flex flex-grow h-screen md:min-h-screen w-full bg-[#faf7f5]">
+      <div className="h-full flex flex-row">
+        <div className="flex items-center flex-col flex-grow">
+          <div className="flex flex-row">
+            <h2 className="text-2xl md:text-4xl font-semibold my-8 text-black text-center md:mx-auto">
+              {blogContent.title}
+            </h2>
+          </div>
+          {!dataExists ? (
             <button
               onClick={() => handleSaveChanges()}
               className="border bg-blue-600 text-white rounded-lg py-2 px-4"
             >
-              Save
+              Save to DB
             </button>
-          </div>
-        ) : (
+          ) : editEnabled ? (
+            <div className="flex space-x-3 my-4">
+              <button
+                onClick={() => handleDiscardChanges()}
+                className="border border-blue-600 text-blue-600 rounded-lg py-2 px-4"
+              >
+                Discard
+              </button>
+              <button
+                onClick={() => handleSaveChanges()}
+                className="border bg-blue-600 text-white rounded-lg py-2 px-4"
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditEnabled(true)}
+              className="border bg-blue-600 text-white rounded-lg py-2 px-4"
+            >
+              Edit
+            </button>
+          )}
           <button
-            onClick={() => setEditEnabled(true)}
+            onClick={() => handleCopyLink()}
             className="border bg-blue-600 text-white rounded-lg py-2 px-4"
           >
-            Edit
+            Share
           </button>
-        )}
-        <button
-          onClick={() => handleCopyLink()}
-          className="border bg-blue-600 text-white rounded-lg py-2 px-4"
-        >
-          Share
-        </button>
 
-        <div className="w-full h-full md:w-2/3 mx-auto text-black">
-          {editEnabled ? (
-            <textarea
-              onChange={(e) => updateContent(e)}
-              value={
-                updatedContent.length > 0
-                  ? updatedContent
-                  : blogContent.textcontent
-              }
-              className="text-gray-800 w-full h-3/4 border rounded p-2"
-              style={{ whiteSpace: "pre-line", height: "60vh" }}
-            />
-          ) : (
-            <div
-              className="text-gray-800 w-full h-3/4  rounded p-2"
-              style={{ whiteSpace: "pre-line", height: "60vh" }}
-              dangerouslySetInnerHTML={getHighlightedText()}
-            />
-          )}
+          <div className="w-full h-full md:w-2/3 mx-auto text-black">
+            {editEnabled ? (
+              <textarea
+                onChange={(e) => updateContent(e)}
+                value={
+                  updatedContent.length > 0
+                    ? updatedContent
+                    : blogContent.textcontent
+                }
+                className="text-gray-800 w-full h-3/4 border rounded p-2"
+                style={{ whiteSpace: "pre-line", height: "60vh" }}
+              />
+            ) : (
+              <div
+                className="text-gray-800 w-full h-3/4  rounded p-2"
+                style={{ whiteSpace: "pre-line", height: "60vh" }}
+                dangerouslySetInnerHTML={getHighlightedText()}
+              />
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-col my-5 space-y-3 items-center mx-10">
-        {commentsInfo.length > 0 &&
-          commentsInfo.map((commentData, index) => {
-            return <CommentCard key={index} commentData={commentData} />;
-          })}
+        <div className="flex flex-col my-5 space-y-3 items-center mx-10">
+          {commentsInfo.length > 0 &&
+            commentsInfo.map((commentData, index) => {
+              return <CommentCard key={index} commentData={commentData} />;
+            })}
+        </div>
       </div>
     </div>
   );

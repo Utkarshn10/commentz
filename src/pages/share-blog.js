@@ -121,7 +121,14 @@ function TextSelectionHandler({
           >
             Comment
           </button>
-        ) : (
+        ) : isHighlightButtonClicked ? (
+          <div
+          className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3 w-1/3`}
+        >
+          Select Text 
+        </div>
+        )
+        : (
           <button
             onClick={() => handleHighlightButtonClick()}
             className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3 w-1/3`}
