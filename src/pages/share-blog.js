@@ -206,10 +206,12 @@ function NewCommentCard({
   };
 
   const getLineAndOffset = (fullText, highlightedText) => {
-    const lines = fullText.split(".");
+    // Use a placeholder character not present in the text
+    const placeholder = '|';
+    const lines = fullText.split('.').map(line => line.replace(/\./g, placeholder));
     let lineNumber = -1;
     let characterOffset = -1;
-
+  
     for (let i = 0; i < lines.length; i++) {
       const index = lines[i].indexOf(highlightedText);
       console.log(index);
@@ -219,13 +221,21 @@ function NewCommentCard({
         break;
       }
     }
-
-    // Calculate the hash of the line content
-    const lineContent = lines[lineNumber];
-    const lineContentHash = md5(lineContent);
-
-    return { lineNumber, characterOffset, lineContentHash };
+  
+    if (lineNumber !== -1) {
+      // Calculate the hash of the line content
+      const lineContent = lines[lineNumber].replace(new RegExp(placeholder, 'g'), '.');
+      const lineContentHash = md5(lineContent);
+  
+      return { lineNumber, characterOffset, lineContentHash };
+    } else {
+      // Handle the case when highlightedText is not found
+      console.error("Highlighted text not found in any line.");
+      return { lineNumber, characterOffset, lineContentHash: null };
+    }
   };
+  
+  
 
   function handleDiscardClicked() {
     setHighlightedText("");
@@ -279,14 +289,14 @@ export default function Blog() {
   }, []);
 
   return (
-    <div className="h-full  md:min-h-screen w-full bg-[#faf7f5] flex flex-row">
+    <div className="h-full md:h-screen w-full bg-[#faf7f5] flex flex-row">
       <div className="flex items-center flex-col flex-grow">
         {!blogContent && blogContent.length === 0 ? (
           <div className="text-black flex items-center  w-full justify-center">
             Blog Draft no longer exists
           </div>
         ) : (
-          <div className="flex items-center">
+          <div className="h-full flex items-center">
             <TextSelectionHandler
               commentsInfo={commentsInfo}
               highlightedText={highlightedText}
@@ -310,7 +320,7 @@ export default function Blog() {
           </div>
         )}
       </div>
-      <div className="flex flex-col my-5 space-y-3 items-center mx-10">
+      <div className="h-full flex flex-col my-5 space-y-3 items-center mx-10">
         {commentsInfo.length > 0 &&
           commentsInfo.map((commentData, index) => {
             return (

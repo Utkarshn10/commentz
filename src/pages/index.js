@@ -173,25 +173,36 @@ export default function Home() {
   };
 
   const getLineAndOffset = (fullText, highlightedText) => {
-    const lines = fullText.split(".");
+    // Use a placeholder character not present in the text
+    const placeholder = '|';
+    const lines = fullText.split('.').map(line => line.replace(/\./g, placeholder));
     let lineNumber = -1;
     let characterOffset = -1;
-
+  
     for (let i = 0; i < lines.length; i++) {
       const index = lines[i].indexOf(highlightedText);
+      console.log(index);
       if (index !== -1) {
         lineNumber = i;
         characterOffset = index;
         break;
       }
     }
-
-    // Calculate the hash of the line content
-    const lineContent = lines[lineNumber];
-    const lineContentHash = md5(highlightedText);
-
-    return { lineNumber, characterOffset, lineContentHash };
+  
+    if (lineNumber !== -1) {
+      // Calculate the hash of the line content
+      const lineContent = lines[lineNumber].replace(new RegExp(placeholder, 'g'), '.');
+      const lineContentHash = md5(lineContent);
+  
+      return { lineNumber, characterOffset, lineContentHash };
+    } else {
+      // Handle the case when highlightedText is not found
+      console.error("Highlighted text not found in any line.");
+      return { lineNumber, characterOffset, lineContentHash: null };
+    }
   };
+  
+  
 
   const handleCopyLink = () => {
     const linkToCopy = "https://commentz.vercel.app/share-blog";
