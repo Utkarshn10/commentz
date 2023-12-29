@@ -10,21 +10,8 @@ export const generateID = () => {
   return randomId;
 };
 
-const hashString = (str) => {
-  let hash = 0;
-  if (str.length === 0) {
-    return hash;
-  }
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return hash.toString();
-};
-
 // Function to generate a line identifier based on the content of the line
-export const generateLineIdentifier = (lineContent) => {
-  // You may customize this function based on your requirements
-  return hashString(lineContent);
+export const generateLineIdentifier = ({ lineNumber, characterOffset }) => {
+  // Assuming you want to use colon as a separator
+  return `${lineNumber}:${characterOffset}`;
 };
