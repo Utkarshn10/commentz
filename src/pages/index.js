@@ -130,9 +130,7 @@ export default function Home() {
       if (lineNumber < lines.length && lineNumber!=-1) {
         // Check if the character offset is within the line
         const line = lines[lineNumber];
-        console.log(lineNumber," ",lines)
         const updatedLineContentHash = md5(line);
-        console.log(line," ",lineContentHash," ",updatedLineContentHash)
 
         if (lineContentHash === updatedLineContentHash) {
           // If the line content hash matches, check if the position is still valid
@@ -171,7 +169,6 @@ export default function Home() {
 
     for (let i = 0; i < lines.length; i++) {
       const index = lines[i].indexOf(highlightedText);
-      console.log(index);
       if (index !== -1) {
         lineNumber = i;
         characterOffset = index;

@@ -4,51 +4,55 @@ export const checkForCommentUpdates = (blogData, updatedContent, blogInfo) => {
   let updatedComments = [];
 
   const commentsInfo = blogData.comments || [];
-  const commentIdentifierToLineMap = {}; // Map to store comment identifiers and their associated line numbers
 
-  // Build the comment identifier to line mapping
   commentsInfo.forEach((comment) => {
-    const { lineNumber, commentID } = comment;
-    const lineIdentifier = lineNumber + "_" + commentID;
-    commentIdentifierToLineMap[lineIdentifier] = lineNumber;
-  });
+    const {
+      lineNumber,
+      characterOffset,
+      lineContentHash,
+      blogText,
+      commentID,
+    } = comment;
 
-  // Check for updates in the updated content
-  const updatedLines = updatedContent.split("\n");
-  updatedLines.forEach((line, lineNumber) => {
-    // Iterate through each line and find the comment using the unique identifier
-    Object.keys(commentIdentifierToLineMap).forEach((commentIdentifier) => {
-      const storedLineNumber = commentIdentifierToLineMap[commentIdentifier];
-      if (lineNumber === storedLineNumber) {
-        // Line found, update the corresponding comment
-        const commentToUpdate = commentsInfo.find((comment) => {
-          return (
-            comment.lineNumber === storedLineNumber &&
-            comment.commentID === commentIdentifier.split("_")[1]
-          );
-        });
+    // Check if the line number is still valid in the updated content
+    const lines = updatedContent.split(".");
+    if (lineNumber < lines.length && lineNumber!=-1) {
+      // Check if the character offset is within the line
+      const line = lines[lineNumber];
+      const updatedLineContentHash = md5(line);
 
-        if (commentToUpdate) {
+      if (lineContentHash === updatedLineContentHash) {
+        // If the line content hash matches, check if the position is still valid
+        const updatedLineAndOffset = getLineAndOffset(
+          updatedContent,
+          blogText
+        );
+
+        if (
+          updatedLineAndOffset.lineNumber !== -1 &&
+          updatedLineAndOffset.characterOffset !== -1
+        ) {
           // Update the comment's line number and character offset based on the new content
-          const updatedLineAndOffset = getLineAndOffset(
-            updatedContent,
-            commentToUpdate.blogText
-          );
-          commentToUpdate.lineNumber = updatedLineAndOffset.lineNumber;
-          commentToUpdate.characterOffset =
-            updatedLineAndOffset.characterOffset;
+          const updatedComment = {
+            ...comment,
+            lineNumber: updatedLineAndOffset.lineNumber,
+            characterOffset: updatedLineAndOffset.characterOffset,
+          };
 
-          updatedComments.push(commentToUpdate);
+          updatedComments.push(updatedComment);
         }
       }
-    });
+    }
+    // Otherwise, the line was deleted, and we exclude the comment from the updated set
   });
 
   return updatedComments;
 };
 
-export const getLineAndOffset = (fullText, highlightedText) => {
-  const lines = fullText.split("\n");
+const getLineAndOffset = (fullText, highlightedText) => {
+  const placeholder = '|';
+  const lines = fullText.split('.').map(line => line.replace(/\./g, placeholder));
+
   let lineNumber = -1;
   let characterOffset = -1;
 
@@ -62,7 +66,7 @@ export const getLineAndOffset = (fullText, highlightedText) => {
   }
 
   // Calculate the hash of the line content
-  const lineContent = lines[lineNumber];
+  const lineContent = lines[lineNumber].replace(new RegExp(placeholder, 'g'), '.');
   const lineContentHash = md5(lineContent);
 
   return { lineNumber, characterOffset, lineContentHash };

@@ -200,7 +200,6 @@ function NewCommentCard({
 
     for (let i = 0; i < lines.length; i++) {
       const index = lines[i].indexOf(highlightedText);
-      console.log(index);
       if (index !== -1) {
         lineNumber = i;
         characterOffset = index;
