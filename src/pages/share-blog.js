@@ -52,28 +52,6 @@ function TextSelectionHandler({
     setIsHighlightButtonClicked(true);
   };
 
-  const highlightTextContent = () => {
-    const textContent = blogContent.textcontent;
-    if (highlightedText.length > 0) {
-      const highlightedIndex = textContent.indexOf(highlightedText);
-      if (highlightedIndex !== -1) {
-        return (
-          <>
-            {textContent.substring(0, highlightedIndex)}
-            <span className="bg-green-200">
-              {textContent.substring(
-                highlightedIndex,
-                highlightedIndex + highlightedText.length
-              )}
-            </span>
-            {textContent.substring(highlightedIndex + highlightedText.length)}
-          </>
-        );
-      }
-    }
-    return textContent;
-  };
-
   const getHighlightedText = () => {
     let highlightedText = blogContent.textcontent;
 
@@ -123,12 +101,11 @@ function TextSelectionHandler({
           </button>
         ) : isHighlightButtonClicked ? (
           <div
-          className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3 w-1/3`}
+          className={`flex justify-center border border-yellow-400 text-yellow-400 bg-white rounded-lg py-2 px-3 w-1/3`}
         >
-          Select Text 
+          Select Text to Add Comment
         </div>
-        )
-        : (
+        ) : (
           <button
             onClick={() => handleHighlightButtonClick()}
             className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3 w-1/3`}
@@ -162,6 +139,10 @@ function NewCommentCard({
   const [comment, setComment] = useState("");
 
   const handleAddComment = () => {
+    if (highlightedText.includes(".")) {
+      alert("Please avoid highlighting text that includes a period (.)");
+      return;
+    }
     let data = JSON.parse(localStorage.getItem("blogInfo"));
     if (data && data[userID] && data[userID][blogID]) {
       let storedBlog = data[userID][blogID];
@@ -213,12 +194,10 @@ function NewCommentCard({
   };
 
   const getLineAndOffset = (fullText, highlightedText) => {
-    // Use a placeholder character not present in the text
-    const placeholder = '|';
-    const lines = fullText.split('.').map(line => line.replace(/\./g, placeholder));
+    const lines = fullText.split(".");
     let lineNumber = -1;
     let characterOffset = -1;
-  
+
     for (let i = 0; i < lines.length; i++) {
       const index = lines[i].indexOf(highlightedText);
       console.log(index);
@@ -228,21 +207,13 @@ function NewCommentCard({
         break;
       }
     }
-  
-    if (lineNumber !== -1) {
-      // Calculate the hash of the line content
-      const lineContent = lines[lineNumber].replace(new RegExp(placeholder, 'g'), '.');
-      const lineContentHash = md5(lineContent);
-  
-      return { lineNumber, characterOffset, lineContentHash };
-    } else {
-      // Handle the case when highlightedText is not found
-      console.error("Highlighted text not found in any line.");
-      return { lineNumber, characterOffset, lineContentHash: null };
-    }
+
+    // Calculate the hash of the line content
+    const lineContent = lines[lineNumber];
+    const lineContentHash = md5(lineContent);
+
+    return { lineNumber, characterOffset, lineContentHash };
   };
-  
-  
 
   function handleDiscardClicked() {
     setHighlightedText("");
@@ -296,14 +267,14 @@ export default function Blog() {
   }, []);
 
   return (
-    <div className="h-full md:h-screen w-full bg-[#faf7f5] flex flex-row">
+    <div className="h-full  md:min-h-screen w-full bg-[#faf7f5] flex flex-row">
       <div className="flex items-center flex-col flex-grow">
         {!blogContent && blogContent.length === 0 ? (
           <div className="text-black flex items-center  w-full justify-center">
             Blog Draft no longer exists
           </div>
         ) : (
-          <div className="h-full flex items-center">
+          <div className="flex items-center">
             <TextSelectionHandler
               commentsInfo={commentsInfo}
               highlightedText={highlightedText}
@@ -327,12 +298,13 @@ export default function Blog() {
           </div>
         )}
       </div>
-      <div className="h-full flex flex-col my-5 space-y-3 items-center mx-10">
+      <div className="flex flex-col my-5 space-y-3 items-center mx-10">
         {commentsInfo.length > 0 &&
           commentsInfo.map((commentData, index) => {
             return (
               <CommentCard
                 key={index}
+                userID={userID}
                 commentsInfo={commentsInfo}
                 commentData={commentData}
               />

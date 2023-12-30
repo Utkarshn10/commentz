@@ -1,6 +1,4 @@
-export function CommentCard({ key, commentsInfo, commentData }) {
-  console.log(commentsInfo)
-  const handleDelete = () => {};
+export function CommentCard({ key, commentsInfo, userID, commentData }) {
 
   return (
     <div className="bg-white w-full text-black">
@@ -10,14 +8,6 @@ export function CommentCard({ key, commentsInfo, commentData }) {
           {commentData.commentDesc}
         </span>
       </div>
-      {/* <div className="flex justify-end m-2 ">
-        <button
-          onClick={() => handleDelete()}
-          className="flex items-center  border bg-blue-600 text-white rounded-lg py-1 px-2"
-        >
-          Delete
-        </button>
-      </div> */}
     </div>
   );
 }
