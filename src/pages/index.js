@@ -1,17 +1,8 @@
 import { useState, useEffect, version } from "react";
-import { generateID } from "./../utils/id-generator";
+import { generateID, generateLineIdentifier } from "./../utils/id-generator";
 import checkForCommentUpdates from "@/utils/update-checker";
-
-function CommentCard({ commentData }) {
-  return (
-    <div className="bg-white w-full text-black">
-      <p className="p-2">{commentData.blogText}</p>
-      <span type="text" className="p-2 border border-gray-400 rounded-sm m-2">
-        {commentData.commentDesc}
-      </span>
-    </div>
-  );
-}
+import md5 from "md5";
+import { CommentCard } from "@/components/commentCard";
 
 export default function Home() {
   const [updatedContent, setUpdatedContent] = useState("");
@@ -20,7 +11,7 @@ export default function Home() {
   const [blogInfo, setBlogInfo] = useState(null);
   const [dataExists, setDataExists] = useState(false);
   const [blogContent, setBlogContent] = useState({
-    heading: "Unleashing Creativity: The Art of Building Side Projects",
+    title: "Unleashing Creativity: The Art of Building Side Projects",
     textcontent: `Embarking on the journey of building side projects is akin to opening the floodgates of creativity. These endeavors serve as a canvas for self-expression, allowing individuals to unleash their imagination and bring ideas to life. Unlike the constraints of daily work tasks, side projects provide the freedom to experiment, take risks, and explore uncharted territories. Whether you are a developer, designer, writer, or artist, these projects act as a playground for innovation, where mistakes are stepping stones and failures are lessons in disguise. Through this creative process, individuals not only hone their technical skills but also cultivate a mindset that embraces curiosity and continuous learning.
     
     In the realm of side projects, each venture is a unique chapter in your creative story. It could be a mobile app, a blog, a piece of art, or even a community initiative. The diversity of these projects adds richness to your portfolio, showcasing your versatility and passion. The art of building side projects lies not just in the final product but in the journey itself — the challenges faced, the solutions devised, and the personal growth experienced. It becomes a reflection of your evolving skill set and a testament to your commitment to pushing boundaries.
@@ -55,7 +46,7 @@ export default function Home() {
       setDataExists(true);
 
       let content = {
-        heading: blogContent.heading,
+        title: blogContent.title,
         textcontent: blogContent.textcontent,
       };
 
@@ -74,7 +65,7 @@ export default function Home() {
 
     if (updatedContent.length > 0) {
       let updatedComments = [];
-      // pulling the latest data from storage to check the updates
+      // Pulling the latest data from storage to check for updates
       let data = JSON.parse(localStorage.getItem("blogInfo"));
       let blogData = {};
       if (data && data[userID] && data[userID][blogID]) {
@@ -84,6 +75,12 @@ export default function Home() {
           updatedContent,
           blogInfo
         );
+
+        // Filter out comments associated with deleted lines
+        updatedComments = updatedComments.filter(
+          (comment) => comment.lineIdentifier !== -1
+        );
+
         setCommentsInfo(updatedComments);
       }
       setEditEnabled(false);
@@ -91,9 +88,9 @@ export default function Home() {
       let blogVersion = blogData.hasOwnProperty("version")
         ? parseInt(blogData.version) + 1
         : 0;
-      4;
+
       let content = {
-        heading: blogContent.heading,
+        title: blogContent.title,
         textcontent: updatedContent,
       };
 
@@ -109,10 +106,81 @@ export default function Home() {
           },
         },
       };
-      // if (updatedComments.length > 0) setCommentsInfo(updatedComments);
       localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
       alert("Blog Updated");
     }
+  };
+
+  const checkForCommentUpdates = (blogData, updatedContent, blogInfo) => {
+    let updatedComments = [];
+
+    const commentsInfo = blogData.comments || [];
+
+    commentsInfo.forEach((comment) => {
+      const {
+        lineNumber,
+        characterOffset,
+        lineContentHash,
+        blogText,
+        commentID,
+      } = comment;
+
+      // Check if the line number is still valid in the updated content
+      const lines = updatedContent.split(".");
+      if (lineNumber < lines.length && lineNumber!=-1) {
+        // Check if the character offset is within the line
+        const line = lines[lineNumber];
+        const updatedLineContentHash = md5(line);
+
+        if (lineContentHash === updatedLineContentHash) {
+          // If the line content hash matches, check if the position is still valid
+          const updatedLineAndOffset = getLineAndOffset(
+            updatedContent,
+            blogText
+          );
+
+          if (
+            updatedLineAndOffset.lineNumber !== -1 &&
+            updatedLineAndOffset.characterOffset !== -1
+          ) {
+            // Update the comment's line number and character offset based on the new content
+            const updatedComment = {
+              ...comment,
+              lineNumber: updatedLineAndOffset.lineNumber,
+              characterOffset: updatedLineAndOffset.characterOffset,
+            };
+
+            updatedComments.push(updatedComment);
+          }
+        }
+      }
+      // Otherwise, the line was deleted, and we exclude the comment from the updated set
+    });
+
+    return updatedComments;
+  };
+
+  const getLineAndOffset = (fullText, highlightedText) => {
+    const placeholder = '|';
+    const lines = fullText.split('.').map(line => line.replace(/\./g, placeholder));
+
+    let lineNumber = -1;
+    let characterOffset = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      const index = lines[i].indexOf(highlightedText);
+      if (index !== -1) {
+        lineNumber = i;
+        characterOffset = index;
+        break;
+      }
+    }
+
+    // Calculate the hash of the line content
+    const lineContent = lines[lineNumber].replace(new RegExp(placeholder, 'g'), '.');
+    const lineContentHash = md5(lineContent);
+
+    return { lineNumber, characterOffset, lineContentHash };
   };
 
   const handleCopyLink = () => {
@@ -132,10 +200,31 @@ export default function Home() {
   const getHighlightedText = () => {
     let highlightedText =
       updatedContent.length > 0 ? updatedContent : blogContent.textcontent;
+
     commentsInfo.forEach((commentData) => {
       const blogText = commentData.blogText;
-      const highlightedPart = `<span class="bg-yellow-100">${blogText}</span>`;
-      highlightedText = highlightedText?.split(blogText).join(highlightedPart);
+      const lineIdentifier = commentData.lineIdentifier;
+
+      let startIndex = highlightedText.indexOf(blogText);
+
+      const precedingText = highlightedText.substring(0, startIndex);
+      const followingText = highlightedText.substring(
+        startIndex + blogText.length
+      );
+
+      if (
+        !precedingText.endsWith("</span>") &&
+        !followingText.startsWith("<span")
+      ) {
+        highlightedText = `${precedingText}<span class="bg-yellow-100" data-id="${lineIdentifier}">${blogText}</span>${followingText}`;
+
+        startIndex = highlightedText.indexOf(
+          blogText,
+          startIndex + blogText.length
+        );
+      } else {
+        startIndex = highlightedText.indexOf(blogText, startIndex + 1);
+      }
     });
 
     return { __html: highlightedText };
@@ -146,7 +235,7 @@ export default function Home() {
       <div className="flex items-center flex-col flex-grow">
         <div className="flex flex-row">
           <h2 className="text-2xl md:text-4xl font-semibold my-8 text-black text-center md:mx-auto">
-            {blogContent.heading}
+            {blogContent.title}
           </h2>
         </div>
         {!dataExists ? (
@@ -211,7 +300,7 @@ export default function Home() {
       <div className="flex flex-col my-5 space-y-3 items-center mx-10">
         {commentsInfo.length > 0 &&
           commentsInfo.map((commentData, index) => {
-            return <CommentCard key={index} commentData={commentData} />;
+            return <CommentCard key={index} userID={userID} commentData={commentData} />;
           })}
       </div>
     </div>

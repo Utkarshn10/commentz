@@ -1,13 +1,19 @@
 import Image from "next/image";
 import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
-import { generateID } from "./../utils/id-generator";
-import checkForUpdates, { checkForBlogUpdates } from "@/utils/update-checker";
+import { generateID, generateLineIdentifier } from "./../utils/id-generator";
+import checkForUpdates, {
+  checkForBlogUpdates,
+  getLineAndOffset,
+} from "@/utils/update-checker";
 import { CommentCard } from "@/components/commentCard";
+import md5 from "md5";
+import { uuid } from "uuidv4";
 
 const inter = Inter({ subsets: ["latin"] });
 
 function TextSelectionHandler({
+  commentsInfo,
   blogContent,
   setCommentClicked,
   highlightedText,
@@ -46,56 +52,75 @@ function TextSelectionHandler({
     setIsHighlightButtonClicked(true);
   };
 
-  const highlightTextContent = () => {
-    const textContent = blogContent.textcontent;
-    if (highlightedText.length > 0) {
-      const highlightedIndex = textContent.indexOf(highlightedText);
-      if (highlightedIndex !== -1) {
-        return (
-          <>
-            {textContent.substring(0, highlightedIndex)}
-            <span className="bg-green-200">
-              {textContent.substring(
-                highlightedIndex,
-                highlightedIndex + highlightedText.length
-              )}
-            </span>
-            {textContent.substring(highlightedIndex + highlightedText.length)}
-          </>
+  const getHighlightedText = () => {
+    let highlightedText = blogContent.textcontent;
+
+    commentsInfo.forEach((commentData) => {
+      const blogText = commentData.blogText;
+      const lineIdentifier = commentData.lineIdentifier;
+
+      let startIndex = highlightedText.indexOf(blogText);
+
+      const precedingText = highlightedText.substring(0, startIndex);
+      const followingText = highlightedText.substring(
+        startIndex + blogText.length
+      );
+
+      if (
+        !precedingText.endsWith("</span>") &&
+        !followingText.startsWith("<span")
+      ) {
+        highlightedText = `${precedingText}<span class="bg-yellow-100" data-id="${lineIdentifier}">${blogText}</span>${followingText}`;
+
+        startIndex = highlightedText.indexOf(
+          blogText,
+          startIndex + blogText.length
         );
+      } else {
+        startIndex = highlightedText.indexOf(blogText, startIndex + 1);
       }
-    }
-    return textContent;
+    });
+
+    return { __html: highlightedText };
   };
 
   return (
     <div className="flex flex-col flex-grow px-6">
       <div className="flex flex-row">
         <h2 className="text-2xl md:text-4xl font-semibold my-8 text-black text-center md:mx-auto">
-          {blogContent.heading}
+          {blogContent.title}
         </h2>
       </div>
-      {highlightedText.length > 0 ? (
-        <button
-          onClick={() => handleCommentButtonClicked()}
-          className="flex justify-center border border-blue-600 text-blue-600 rounded-lg py-2 px-3"
+      <div className="flex justify-center">
+        {highlightedText.length > 0 ? (
+          <button
+            onClick={() => handleCommentButtonClicked()}
+            className="flex justify-center border border-blue-600 text-blue-600 rounded-lg py-2 px-3 w-1/3"
+          >
+            Comment
+          </button>
+        ) : isHighlightButtonClicked ? (
+          <div
+          className={`flex justify-center border border-yellow-400 text-yellow-400 bg-white rounded-lg py-2 px-3 w-1/3`}
         >
-          Comment
-        </button>
-      ) : (
-        <button
-          onClick={() => handleHighlightButtonClick()}
-          className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3`}
-        >
-          Highlight
-        </button>
-      )}
-
+          Select Text to Add Comment
+        </div>
+        ) : (
+          <button
+            onClick={() => handleHighlightButtonClick()}
+            className={`flex justify-center border bg-yellow-400 text-white rounded-lg py-2 px-3 w-1/3`}
+          >
+            Highlight
+          </button>
+        )}
+      </div>
       <div className="w-4/5 mx-auto text-black">
         <div className="p-6">
-          <p className="text-gray-800" style={{ whiteSpace: "pre-line" }}>
-            {highlightTextContent()}
-          </p>
+          <div
+            className="text-gray-800 w-full h-3/4  rounded p-2"
+            style={{ whiteSpace: "pre-line", height: "60vh" }}
+            dangerouslySetInnerHTML={getHighlightedText()}
+          />
         </div>
       </div>
     </div>
@@ -104,6 +129,7 @@ function TextSelectionHandler({
 
 function NewCommentCard({
   commentsInfo,
+  setCommentsInfo,
   userID,
   blogID,
   setCommentClicked,
@@ -113,6 +139,10 @@ function NewCommentCard({
   const [comment, setComment] = useState("");
 
   const handleAddComment = () => {
+    if (highlightedText.includes(".")) {
+      alert("Please avoid highlighting text that includes a period (.)");
+      return;
+    }
     let data = JSON.parse(localStorage.getItem("blogInfo"));
     if (data && data[userID] && data[userID][blogID]) {
       let storedBlog = data[userID][blogID];
@@ -121,17 +151,25 @@ function NewCommentCard({
         let blogContent = storedBlog.blogContent;
         let comments = storedBlog?.comments ? storedBlog.comments : [];
 
-        let commentID = generateID();
+        const commentID = uuid();
         let commentatorID = generateID();
+
+        // Use a hash of the highlighted text as the identifier
+        const { lineNumber, characterOffset, lineContentHash } =
+          getLineAndOffset(blogContent.textcontent, highlightedText);
 
         let commentObj = {
           commentatorID: commentatorID,
           commentID: commentID,
           blogText: highlightedText,
           commentDesc: comment,
+          lineContentHash: lineContentHash, // Use content hash as the identifier
+          lineNumber: lineNumber,
+          characterOffset: characterOffset,
         };
+
         comments.push(commentObj);
-        commentsInfo.push(commentObj);
+
         const updatedBlogInfo = {
           [userID]: {
             [blogID]: {
@@ -142,17 +180,38 @@ function NewCommentCard({
           },
         };
         localStorage.setItem("blogInfo", JSON.stringify(updatedBlogInfo));
-
+        setCommentsInfo(comments);
         setHighlightedText("");
         setCommentClicked(false);
         setComment("");
         alert("Comment Added !");
       } else {
         alert(
-          "Lines on which comment is being added are updated. Comment can't be added. Refresh Page to View."
+          "Lines on which the comment is being added are updated. Comment can't be added. Refresh Page to View."
         );
       }
     }
+  };
+
+  const getLineAndOffset = (fullText, highlightedText) => {
+    const lines = fullText.split(".");
+    let lineNumber = -1;
+    let characterOffset = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      const index = lines[i].indexOf(highlightedText);
+      if (index !== -1) {
+        lineNumber = i;
+        characterOffset = index;
+        break;
+      }
+    }
+
+    // Calculate the hash of the line content
+    const lineContent = lines[lineNumber];
+    const lineContentHash = md5(lineContent);
+
+    return { lineNumber, characterOffset, lineContentHash };
   };
 
   function handleDiscardClicked() {
@@ -216,6 +275,7 @@ export default function Blog() {
         ) : (
           <div className="flex items-center">
             <TextSelectionHandler
+              commentsInfo={commentsInfo}
               highlightedText={highlightedText}
               blogContent={blogContent}
               setCommentClicked={setCommentClicked}
@@ -225,6 +285,7 @@ export default function Blog() {
               {commentClicked && (
                 <NewCommentCard
                   commentsInfo={commentsInfo}
+                  setCommentsInfo={setCommentsInfo}
                   userID={userID}
                   blogID={blogID}
                   setHighlightedText={setHighlightedText}
@@ -242,6 +303,7 @@ export default function Blog() {
             return (
               <CommentCard
                 key={index}
+                userID={userID}
                 commentsInfo={commentsInfo}
                 commentData={commentData}
               />
