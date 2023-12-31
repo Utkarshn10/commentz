@@ -12,15 +12,18 @@ LocalStorage is used for Demo Purposes. Data will be stored in the following man
 	[blogID]: {
 		"comments": [
 		{
-			"commenterID": "abcf324" //userID of the commenter
+			"commenatorID": "abcf324" //userID of the commenter
 			"commentID": "ehvhvc",
-			"blogText": "Through this creative process, individuals not only hone their technical skills but also cultivate a mindset that embraces curiosity and continuous learning.",
+			"blogText": "Through this creative process ....",
 			"commentDesc": "Looks good !"
+			"characterOffset": "1",
+			"lineContentHash": "97d313def28a1effc148ce636ea3fcb0"
+			"lineNumber": "8"
 		}
 		],
 		"content": {
-			"heading": "Unleashing Creativity: The Art of Building Side Projects",
-			"textcontent": "Embarking on the journey of building side projects is akin to opening the floodgates of creativity. These endeavors serve as a canvas for self-expression, allowing individuals to unleash their imagination and bring ideas to life."
+			"title": "Unleashing Creativity: The Art of Building Side Projects",
+			"textcontent": "Embarking on the journey of building side projects is ....."
 		},
 		"version": 1
 		}
